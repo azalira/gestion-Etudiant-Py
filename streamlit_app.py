@@ -1,5 +1,4 @@
 import streamlit as st
-import dns.resolver
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
@@ -16,28 +15,13 @@ except Exception:
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
 
-
-def resolve_srv(uri):
-    if "+srv" not in uri:
-        return uri
-    import re
-    m = re.match(r'mongodb\+srv://([^:]+):([^@]+)@([^/]+)/(.*)', uri)
-    if not m:
-        return uri
-    user, pwd, host, params = m.group(1), m.group(2), m.group(3), m.group(4)
-    resolver = dns.resolver.Resolver()
-    resolver.nameservers = ['8.8.8.8', '1.1.1.1', '1.0.0.1']
-    srv_records = resolver.resolve(f'_mongodb._tcp.{host}', 'SRV')
-    hosts = [f"{str(r.target).rstrip('.')}:{r.port}" for r in srv_records]
-    hostlist = ','.join(hosts)
-    return f"mongodb://{user}:{pwd}@{hostlist}/?{params}"
+MONGO_DIRECT = "mongodb://lazafidera_db_user:2RVHeKP13HlbeyKU@159.41.89.69:27017,159.41.89.38:27017,159.41.89.56:27017/gestion_etudiants?authSource=admin&retryWrites=true&w=majority&tls=true"
 
 
 @st.cache_resource
 def get_db():
-    resolved_uri = resolve_srv(MONGO_URI)
     client = MongoClient(
-        resolved_uri,
+        MONGO_DIRECT,
         serverSelectionTimeoutMS=15000,
         connectTimeoutMS=15000,
         socketTimeoutMS=15000,
