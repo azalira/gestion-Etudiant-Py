@@ -13,7 +13,7 @@ load_dotenv()
 try:
     MONGO_URI = st.secrets["MONGO_URI"]
     DB_NAME = st.secrets["DB_NAME"]
-except (KeyError, FileNotFoundError):
+except Exception:
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
 COLLECTION_NAME = "etudiants"
@@ -23,9 +23,9 @@ COLLECTION_NAME = "etudiants"
 def get_db():
     client = MongoClient(
         MONGO_URI,
-        serverSelectionTimeoutMS=10000,
-        connectTimeoutMS=10000,
-        socketTimeoutMS=10000,
+        serverSelectionTimeoutMS=15000,
+        connectTimeoutMS=15000,
+        socketTimeoutMS=15000,
         tls=True,
         retryWrites=True
     )
