@@ -8,6 +8,8 @@ from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
 
+st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout="wide")
+
 load_dotenv()
 
 try:
@@ -72,8 +74,6 @@ def modifier_etudiant(etudiant_id, numero, nom_prenom, age, classe, moyenne):
 def supprimer_etudiant(etudiant_id):
     collection.delete_one({"_id": ObjectId(etudiant_id)})
 
-
-st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout="wide")
 
 st.markdown("""
 <style>
