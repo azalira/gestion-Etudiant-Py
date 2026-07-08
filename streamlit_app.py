@@ -15,7 +15,7 @@ except Exception:
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
 
-MONGO_DIRECT = "mongodb://lazafidera_db_user:2RVHeKP13HlbeyKU@159.41.89.69:27017,159.41.89.38:27017,159.41.89.56:27017/gestion_etudiants?authSource=admin&retryWrites=true&w=majority&tls=true"
+MONGO_DIRECT = "mongodb://lazafidera_db_user:2RVHeKP13HlbeyKU@159.41.89.69:27017,159.41.89.38:27017,159.41.89.56:27017/gestion_etudiants?authSource=admin&retryWrites=true&w=majority&tls=true&tlsAllowInvalidHostnames=true"
 
 
 @st.cache_resource
