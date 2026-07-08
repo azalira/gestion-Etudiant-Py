@@ -130,6 +130,7 @@ st.markdown("""
     .stTextInput > div > div > input,
     .stNumberInput > div > div > input {
         background: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
         border: 1px solid var(--border-color) !important;
         border-radius: var(--radius-sm) !important;
         padding: 12px 16px !important;
@@ -147,6 +148,7 @@ st.markdown("""
 
     .stSelectbox > div > div {
         background: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
         border: 1px solid var(--border-color) !important;
         border-radius: var(--radius-sm) !important;
         box-shadow: var(--shadow-sm) !important;
@@ -339,6 +341,13 @@ st.markdown("""
         font-size: 0.9rem !important;
         margin-bottom: 6px !important;
         font-family: 'Inter', sans-serif !important;
+    }
+
+    .stTextInput input,
+    .stNumberInput input,
+    .stSelectbox input,
+    .stTextArea textarea {
+        color: var(--text-primary) !important;
     }
 
     [data-testid="stDataFrame"] table {
