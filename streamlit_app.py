@@ -1,79 +1,73 @@
 import streamlit as st
-import requests
-import json
+import dns.resolver
+_new_resolver = dns.resolver.Resolver()
+_new_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
+dns.resolver.default_resolver = _new_resolver
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+from dotenv import load_dotenv
+import os
 
 st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout="wide")
 
+load_dotenv()
+
 try:
-    DATA_API_URL = st.secrets["DATA_API_URL"]
-    DATA_API_KEY = st.secrets["DATA_API_KEY"]
-    DB_NAME = st.secrets.get("DB_NAME", "gestion_etudiants")
+    MONGO_URI = st.secrets["MONGO_URI"]
+    DB_NAME = st.secrets["DB_NAME"]
 except Exception:
-    DATA_API_URL = ""
-    DATA_API_KEY = ""
-    DB_NAME = "gestion_etudiants"
-
-COLLECTION = "etudiants"
+    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
 
 
-def api_action(action, body):
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": DATA_API_KEY
-    }
-    payload = {
-        "dataSource": "Cluster0",
-        "database": DB_NAME,
-        "collection": COLLECTION,
-        **body
-    }
-    resp = requests.post(f"{DATA_API_URL}/action/{action}", headers=headers, json=payload, timeout=30)
-    return resp.json()
+@st.cache_resource
+def get_db():
+    client = MongoClient(
+        MONGO_URI,
+        serverSelectionTimeoutMS=15000,
+        connectTimeoutMS=15000,
+        socketTimeoutMS=15000,
+        tls=True,
+        retryWrites=True
+    )
+    return client[DB_NAME]["etudiants"]
+
+
+collection = get_db()
+
+
+def generer_numero():
+    count = collection.count_documents({})
+    return f"ETU-{str(count + 1).zfill(4)}"
 
 
 def inserer_etudiant(numero, nom_prenom, age, classe, moyenne):
-    return api_action("insertOne", {
-        "document": {
-            "numero": numero, "nom_prenom": nom_prenom,
-            "age": age, "classe": classe, "moyenne": moyenne
-        }
+    return collection.insert_one({
+        "numero": numero, "nom_prenom": nom_prenom,
+        "age": age, "classe": classe, "moyenne": moyenne
     })
 
 
 def rechercher_etudiants(terme=""):
+    query = {}
     if terme:
-        query = {"$or": [
+        query["$or"] = [
             {"numero": {"$regex": terme, "$options": "i"}},
             {"nom_prenom": {"$regex": terme, "$options": "i"}},
             {"classe": {"$regex": terme, "$options": "i"}},
-        ]}
-    else:
-        query = {}
-    result = api_action("find", {"filter": query})
-    return result.get("documents", [])
+        ]
+    return list(collection.find(query))
 
 
 def modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne):
-    return api_action("updateOne", {
-        "filter": {"_id": {"$oid": etudiant_id}},
-        "update": {"$set": {"nom_prenom": nom_prenom, "age": age, "classe": classe, "moyenne": moyenne}}
-    })
+    collection.update_one(
+        {"_id": ObjectId(etudiant_id)},
+        {"$set": {"nom_prenom": nom_prenom, "age": age, "classe": classe, "moyenne": moyenne}}
+    )
 
 
 def supprimer_etudiant(etudiant_id):
-    return api_action("deleteOne", {
-        "filter": {"_id": {"$oid": etudiant_id}}
-    })
-
-
-def count_etudiants():
-    result = api_action("count", {"filter": {}})
-    return result.get("count", 0)
-
-
-def generer_numero():
-    count = count_etudiants()
-    return f"ETU-{str(count + 1).zfill(4)}"
+    collection.delete_one({"_id": ObjectId(etudiant_id)})
 
 
 st.markdown("""
@@ -130,15 +124,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-if not DATA_API_URL or not DATA_API_KEY:
-    st.error("Configuration manquante. Ajoutez `DATA_API_URL` et `DATA_API_KEY` dans vos secrets Streamlit.")
-    st.stop()
-
 with st.sidebar:
     st.markdown("# 🎓 Gestion Étudiants")
     st.markdown('<p style="color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-top: -8px;">Système de gestion scolaire</p>', unsafe_allow_html=True)
     st.markdown("---")
-    st.metric("Étudiants", count_etudiants())
+    st.metric("Étudiants", collection.count_documents({}))
 
 page = st.radio("Navigation", ["Liste", "Ajouter", "Modifier"], horizontal=True, label_visibility="collapsed")
 
@@ -164,14 +154,14 @@ if page == "Liste":
             if st.button("✏️ Modifier", use_container_width=True):
                 etudiant_choisi = next((e for e in etudiants if e.get("numero") == selected_numero), None)
                 if etudiant_choisi:
-                    st.session_state.editing_id = etudiant_choisi.get("_id", {}).get("$oid", "")
+                    st.session_state.editing_id = str(etudiant_choisi["_id"])
                     st.session_state.page = "Modifier"
                     st.rerun()
         with col3:
             if st.button("🗑️ Supprimer", type="primary", use_container_width=True):
                 etudiant_choisi = next((e for e in etudiants if e.get("numero") == selected_numero), None)
                 if etudiant_choisi:
-                    supprimer_etudiant(etudiant_choisi.get("_id", {}).get("$oid", ""))
+                    supprimer_etudiant(etudiant_choisi["_id"])
                     st.success(f"{etudiant_choisi.get('nom_prenom', '')} supprimé.")
                     st.rerun()
     else:
@@ -207,10 +197,7 @@ elif page == "Ajouter":
 
 elif page == "Modifier":
     etudiant_id = st.session_state.get("editing_id")
-    etudiant = None
-    if etudiant_id:
-        result = api_action("findOne", {"filter": {"_id": {"$oid": etudiant_id}}})
-        etudiant = result.get("document")
+    etudiant = collection.find_one({"_id": ObjectId(etudiant_id)}) if etudiant_id else None
 
     if not etudiant:
         st.markdown("# ⚠️ Aucun étudiant sélectionné")
