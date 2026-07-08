@@ -1,90 +1,46 @@
 import streamlit as st
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+from dotenv import load_dotenv
 import os
-import json
-import urllib.request
 
 st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout="wide")
-
-from dotenv import load_dotenv
 
 load_dotenv()
 
 try:
-    DATA_API_URL = st.secrets["DATA_API_URL"]
-    DATA_API_KEY = st.secrets["DATA_API_KEY"]
+    MONGO_URI = st.secrets["MONGO_URI"]
     DB_NAME = st.secrets["DB_NAME"]
 except Exception:
-    DATA_API_URL = os.getenv("DATA_API_URL", "")
-    DATA_API_KEY = os.getenv("DATA_API_KEY", "")
+    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
 
-COLLECTION = "etudiants"
+MONGO_DIRECT = "mongodb://lazafidera_db_user:2RVHeKP13HlbeyKU@ac-aca4obh-shard-00-00.zb8k0oa.mongodb.net:27017,ac-aca4obh-shard-00-01.zb8k0oa.mongodb.net:27017,ac-aca4obh-shard-00-02.zb8k0oa.mongodb.net:27017/gestion_etudiants?authSource=admin&replicaSet=atlas-c9l8rx-shard-0&tls=true&tlsInsecure=true&serverSelectionTimeoutMS=60000&connectTimeoutMS=60000"
 
 
-def data_api(action, document=None, filter_query=None, update=None):
-    if not DATA_API_URL or not DATA_API_KEY:
-        st.error("Configuration Data API manquante dans les secrets.")
-        return None
-    payload = {
-        "collection": COLLECTION,
-        "database": DB_NAME,
-        "dataSource": "Cluster0",
-    }
-    payload.update(kwargs)
-    req = urllib.request.Request(
-        f"{DATA_API_URL}/action/{action}",
-        data=json.dumps(payload).encode(),
-        headers={
-            "Content-Type": "application/json",
-            "api-key": DATA_API_KEY,
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            result = json.loads(resp.read())
-            return (
-                result.get("documents")
-                if "documents" in result
-                else result.get("document")
-            )
-    except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        st.error(f"Data API error {e.code}: {body}")
-        return None
-    except Exception as e:
-        st.error(f"Data API error: {e}")
-        return None
+@st.cache_resource
+def get_db():
+    client = MongoClient(MONGO_DIRECT)
+    return client[DB_NAME]["etudiants"]
 
 
-def compter_etudiants():
-    docs = data_api("find", filter={}, projection={"_id": 1}, limit=1000)
-    return len(docs) if docs else 0
+collection = get_db()
 
 
 def generer_numero():
-    docs = data_api(
-        "find", filter={}, projection={"numero": 1}, sort={"numero": -1}, limit=1
-    )
-    if docs:
-        last_num = docs[0].get("numero", "")
-        try:
-            count = int(last_num.split("-")[1])
-        except (ValueError, IndexError):
-            count = 0
-        return f"ETU-{str(count + 1).zfill(4)}"
-    return "ETU-0001"
+    count = collection.count_documents({})
+    return f"ETU-{str(count + 1).zfill(4)}"
 
 
 def inserer_etudiant(numero, nom_prenom, age, classe, moyenne):
-    return data_api(
-        "insertOne",
-        document={
+    return collection.insert_one(
+        {
             "numero": numero,
             "nom_prenom": nom_prenom,
             "age": age,
             "classe": classe,
             "moyenne": moyenne,
-        },
+        }
     )
 
 
@@ -96,27 +52,25 @@ def rechercher_etudiants(terme=""):
             {"nom_prenom": {"$regex": terme, "$options": "i"}},
             {"classe": {"$regex": terme, "$options": "i"}},
         ]
-    docs = data_api("find", filter=query)
-    return docs or []
+    return list(collection.find(query))
 
 
 def modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne):
-    return data_api(
-        "updateOne",
-        filter={"_id": {"$oid": etudiant_id}},
-        update={
+    collection.update_one(
+        {"_id": ObjectId(etudiant_id)},
+        {
             "$set": {
                 "nom_prenom": nom_prenom,
                 "age": age,
                 "classe": classe,
                 "moyenne": moyenne,
-            },
+            }
         },
     )
 
 
 def supprimer_etudiant(etudiant_id):
-    return data_api("deleteOne", filter={"_id": {"$oid": etudiant_id}})
+    collection.delete_one({"_id": ObjectId(etudiant_id)})
 
 
 st.markdown(
@@ -135,10 +89,9 @@ st.markdown(
     .stApp > header { background: transparent !important; }
     .main .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; max-width: 1100px !important; }
     h1, h2, h3 { font-family: 'Inter', sans-serif !important; color: var(--text) !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
-    h1 { font-size: 1.7rem !important; }
     [data-testid="stSidebar"] { background: var(--sidebar-bg) !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #fff !important; }
-    [data-testid="stSidebar"] .stRadio > div { background: transparent !important; border: none !important; box-shadow: none !important; }
+    [data-testid="stSidebar"] .stRadio > div { background: transparent !important; border: none !important; }
     [data-testid="stSidebar"] .stRadio > div > div > label { color: rgba(255,255,255,0.7) !important; padding: 10px 16px !important; border-radius: var(--radius) !important; }
     [data-testid="stSidebar"] .stRadio > div > div > label:hover { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
     [data-testid="stSidebar"] .stRadio > div > div > div[data-checked="true"] > label { background: var(--accent) !important; color: white !important; }
@@ -163,9 +116,6 @@ st.markdown(
     [data-testid="stDataFrame"] th { background: #f8fafc !important; font-weight: 600 !important; text-transform: uppercase !important; font-size: 0.72rem !important; letter-spacing: 0.06em !important; color: var(--text-muted) !important; padding: 12px 16px !important; border-bottom: 1.5px solid var(--border) !important; }
     [data-testid="stDataFrame"] td { padding: 12px 16px !important; border-bottom: 1px solid #f1f5f9 !important; font-size: 0.9rem !important; }
     [data-testid="stDataFrame"] tr:hover td { background: #f8fafc !important; }
-    .stSuccess { background: var(--green-bg) !important; border: 1px solid rgba(5,150,105,0.2) !important; border-radius: var(--radius) !important; color: var(--green) !important; }
-    .stError { background: var(--red-bg) !important; border: 1px solid rgba(220,38,38,0.2) !important; border-radius: var(--radius) !important; color: var(--red) !important; }
-    .stInfo { background: var(--accent-bg) !important; border: 1px solid rgba(37,99,235,0.15) !important; border-radius: var(--radius) !important; color: var(--accent) !important; }
     .stTextInput label, .stNumberInput label, .stSelectbox label { font-weight: 500 !important; color: var(--text) !important; font-size: 0.82rem !important; margin-bottom: 2px !important; font-family: 'Inter', sans-serif !important; white-space: nowrap !important; }
     .stTextInput input, .stNumberInput input, .stSelectbox input, .stTextArea textarea { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
     .stTextInput > div > div > input::placeholder { -webkit-text-fill-color: rgba(255,255,255,0.5) !important; }
@@ -183,7 +133,10 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.markdown("---")
-    st.metric("Étudiants", compter_etudiants())
+    try:
+        st.metric("Étudiants", collection.count_documents({}))
+    except Exception:
+        st.metric("Étudiants", "❌ Erreur connexion")
 
 page = st.radio(
     "Navigation",
@@ -199,7 +152,11 @@ if page == "Liste":
         placeholder="Rechercher par numéro, nom ou classe...",
         label_visibility="collapsed",
     )
-    etudiants = rechercher_etudiants(terme)
+    try:
+        etudiants = rechercher_etudiants(terme)
+    except Exception:
+        st.error("Impossible de se connecter à la base de données.")
+        st.stop()
 
     if etudiants:
         import pandas as pd
@@ -216,7 +173,6 @@ if page == "Liste":
         )
         df.index = range(1, len(df) + 1)
         st.dataframe(df, use_container_width=True, hide_index=False)
-
         st.markdown("---")
         col1, col2, col3 = st.columns([4, 1, 1])
         with col1:
@@ -250,7 +206,6 @@ elif page == "Ajouter":
         '<p style="color: #6b7280; margin-top: -12px; font-size: 0.9rem;">Remplissez les informations ci-dessous</p>',
         unsafe_allow_html=True,
     )
-
     nouveau_numero = generer_numero()
 
     with st.form("add_form", clear_on_submit=True):
@@ -285,29 +240,30 @@ elif page == "Ajouter":
                 format="%.2f",
             )
             st.markdown("")
-
         st.markdown(
             '<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True
         )
         submitted = st.form_submit_button(
             "💾 Enregistrer", type="primary", use_container_width=True
         )
-
         if submitted:
             if not nom_prenom or not classe:
                 st.error("Veuillez remplir tous les champs obligatoires.")
             else:
-                inserer_etudiant(nouveau_numero, nom_prenom, age, classe, moyenne)
-                st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
-                st.balloons()
+                try:
+                    inserer_etudiant(nouveau_numero, nom_prenom, age, classe, moyenne)
+                    st.success(
+                        f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})"
+                    )
+                    st.balloons()
+                except Exception as e:
+                    st.error(f"Erreur lors de l'ajout : {e}")
 
 elif page == "Modifier":
     etudiant_id = st.session_state.get("editing_id")
-    etudiant = None
-    if etudiant_id:
-        docs = data_api("find", filter_query={"_id": {"$oid": etudiant_id}})
-        if docs:
-            etudiant = docs[0]
+    etudiant = (
+        collection.find_one({"_id": ObjectId(etudiant_id)}) if etudiant_id else None
+    )
 
     if not etudiant:
         st.markdown("# ⚠️ Aucun étudiant sélectionné")
@@ -359,7 +315,6 @@ elif page == "Modifier":
                     format="%.2f",
                 )
                 st.markdown("")
-
             st.markdown(
                 '<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True
             )
@@ -368,12 +323,14 @@ elif page == "Modifier":
                 type="primary",
                 use_container_width=True,
             )
-
             if submitted:
                 if not nom_prenom or not classe:
                     st.error("Veuillez remplir tous les champs obligatoires.")
                 else:
-                    modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne)
-                    st.success(f"✅ {nom_prenom} modifié avec succès !")
-                    st.session_state.pop("editing_id", None)
-                    st.rerun()
+                    try:
+                        modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne)
+                        st.success(f"✅ {nom_prenom} modifié avec succès !")
+                        st.session_state.pop("editing_id", None)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erreur lors de la modification : {e}")
