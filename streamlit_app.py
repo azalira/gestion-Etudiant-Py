@@ -1,11 +1,4 @@
 import streamlit as st
-
-import dns.resolver
-
-_dns_resolver = dns.resolver.Resolver()
-_dns_resolver.nameservers = ["8.8.8.8", "1.1.1.1"]
-dns.resolver.default_resolver = _dns_resolver
-
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
@@ -27,9 +20,12 @@ except Exception:
 def get_db():
     client = MongoClient(
         MONGO_URI,
-        serverSelectionTimeoutMS=15000,
-        connectTimeoutMS=15000,
-        socketTimeoutMS=15000,
+        serverSelectionTimeoutMS=20000,
+        connectTimeoutMS=20000,
+        socketTimeoutMS=20000,
+        tls=True,
+        tlsAllowInvalidHostnames=True,
+        retryWrites=True
     )
     return client[DB_NAME]["etudiants"]
 
