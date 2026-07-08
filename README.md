@@ -51,3 +51,4 @@ L'app sera disponible sur `http://localhost:8501`
 
 - Python 3.8+
 - MongoDB (local ou distant)
+# gestion-Etudiant-Py
