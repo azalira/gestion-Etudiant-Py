@@ -176,7 +176,19 @@ st.markdown("""
         margin-bottom: 2px !important; font-family: 'Inter', sans-serif !important;
         white-space: nowrap !important; overflow: visible !important;
     }
-    .stTextInput input, .stNumberInput input, .stSelectbox input, .stTextArea textarea { color: var(--text) !important; }
+    .stTextInput input, .stNumberInput input, .stSelectbox input, .stTextArea textarea,
+    .stTextInput textarea, .stNumberInput textarea, .stSelectbox textarea {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+    .stTextInput > div > div > input::placeholder,
+    .stTextArea textarea::placeholder {
+        -webkit-text-fill-color: rgba(255,255,255,0.5) !important;
+    }
+    .stSelectbox > div > div > div > span {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
 
     div[data-testid="stMetric"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 12px !important; padding: 20px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important; }
 
