@@ -1,8 +1,15 @@
 import streamlit as st
 import dns.resolver
-_new_resolver = dns.resolver.Resolver()
-_new_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
-dns.resolver.default_resolver = _new_resolver
+
+_orig_resolver_init = dns.resolver.Resolver.__init__
+
+
+def _patched_resolver_init(self, *args, **kwargs):
+    _orig_resolver_init(self, *args, **kwargs)
+    self.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+
+
+dns.resolver.Resolver.__init__ = _patched_resolver_init
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
@@ -28,7 +35,7 @@ def get_db():
         connectTimeoutMS=15000,
         socketTimeoutMS=15000,
         tls=True,
-        retryWrites=True
+        retryWrites=True,
     )
     return client[DB_NAME]["etudiants"]
 
@@ -42,10 +49,15 @@ def generer_numero():
 
 
 def inserer_etudiant(numero, nom_prenom, age, classe, moyenne):
-    return collection.insert_one({
-        "numero": numero, "nom_prenom": nom_prenom,
-        "age": age, "classe": classe, "moyenne": moyenne
-    })
+    return collection.insert_one(
+        {
+            "numero": numero,
+            "nom_prenom": nom_prenom,
+            "age": age,
+            "classe": classe,
+            "moyenne": moyenne,
+        }
+    )
 
 
 def rechercher_etudiants(terme=""):
@@ -62,7 +74,14 @@ def rechercher_etudiants(terme=""):
 def modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne):
     collection.update_one(
         {"_id": ObjectId(etudiant_id)},
-        {"$set": {"nom_prenom": nom_prenom, "age": age, "classe": classe, "moyenne": moyenne}}
+        {
+            "$set": {
+                "nom_prenom": nom_prenom,
+                "age": age,
+                "classe": classe,
+                "moyenne": moyenne,
+            }
+        },
     )
 
 
@@ -70,7 +89,8 @@ def supprimer_etudiant(etudiant_id):
     collection.delete_one({"_id": ObjectId(etudiant_id)})
 
 
-st.markdown("""
+st.markdown(
+    """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     :root {
@@ -122,44 +142,71 @@ st.markdown("""
     div[data-testid="stMetric"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 12px !important; padding: 20px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important; }
     .form-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
     st.markdown("# 🎓 Gestion Étudiants")
-    st.markdown('<p style="color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-top: -8px;">Système de gestion scolaire</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p style="color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-top: -8px;">Système de gestion scolaire</p>',
+        unsafe_allow_html=True,
+    )
     st.markdown("---")
     st.metric("Étudiants", collection.count_documents({}))
 
-page = st.radio("Navigation", ["Liste", "Ajouter", "Modifier"], horizontal=True, label_visibility="collapsed")
+page = st.radio(
+    "Navigation",
+    ["Liste", "Ajouter", "Modifier"],
+    horizontal=True,
+    label_visibility="collapsed",
+)
 
 if page == "Liste":
     st.markdown("# 📋 Liste des Étudiants")
-    terme = st.text_input("Rechercher", placeholder="Rechercher par numéro, nom ou classe...", label_visibility="collapsed")
+    terme = st.text_input(
+        "Rechercher",
+        placeholder="Rechercher par numéro, nom ou classe...",
+        label_visibility="collapsed",
+    )
     etudiants = rechercher_etudiants(terme)
 
     if etudiants:
         import pandas as pd
+
         df = pd.DataFrame(etudiants)
-        df = df[["numero", "nom_prenom", "age", "classe", "moyenne"]].rename(columns={
-            "numero": "N° Inscription", "nom_prenom": "Nom & Prénom", "age": "Âge", "classe": "Classe", "moyenne": "Moyenne"
-        })
+        df = df[["numero", "nom_prenom", "age", "classe", "moyenne"]].rename(
+            columns={
+                "numero": "N° Inscription",
+                "nom_prenom": "Nom & Prénom",
+                "age": "Âge",
+                "classe": "Classe",
+                "moyenne": "Moyenne",
+            }
+        )
         df.index = range(1, len(df) + 1)
         st.dataframe(df, use_container_width=True, hide_index=False)
 
         st.markdown("---")
         col1, col2, col3 = st.columns([4, 1, 1])
         with col1:
-            selected_numero = st.selectbox("Sélectionner un étudiant", [e.get("numero", "") for e in etudiants])
+            selected_numero = st.selectbox(
+                "Sélectionner un étudiant", [e.get("numero", "") for e in etudiants]
+            )
         with col2:
             if st.button("✏️ Modifier", use_container_width=True):
-                etudiant_choisi = next((e for e in etudiants if e.get("numero") == selected_numero), None)
+                etudiant_choisi = next(
+                    (e for e in etudiants if e.get("numero") == selected_numero), None
+                )
                 if etudiant_choisi:
                     st.session_state.editing_id = str(etudiant_choisi["_id"])
                     st.session_state.page = "Modifier"
                     st.rerun()
         with col3:
             if st.button("🗑️ Supprimer", type="primary", use_container_width=True):
-                etudiant_choisi = next((e for e in etudiants if e.get("numero") == selected_numero), None)
+                etudiant_choisi = next(
+                    (e for e in etudiants if e.get("numero") == selected_numero), None
+                )
                 if etudiant_choisi:
                     supprimer_etudiant(etudiant_choisi["_id"])
                     st.success(f"{etudiant_choisi.get('nom_prenom', '')} supprimé.")
@@ -169,23 +216,52 @@ if page == "Liste":
 
 elif page == "Ajouter":
     st.markdown("# ➕ Nouvel Étudiant")
-    st.markdown('<p style="color: #6b7280; margin-top: -12px; font-size: 0.9rem;">Remplissez les informations ci-dessous</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p style="color: #6b7280; margin-top: -12px; font-size: 0.9rem;">Remplissez les informations ci-dessous</p>',
+        unsafe_allow_html=True,
+    )
 
     nouveau_numero = generer_numero()
 
     with st.form("add_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
-            st.text_input("N° Inscription", value=nouveau_numero, disabled=True, key="auto_num")
+            st.text_input(
+                "N° Inscription", value=nouveau_numero, disabled=True, key="auto_num"
+            )
             nom_prenom = st.text_input("Nom & Prénom *", placeholder="Ex: Dupont Jean")
             age = st.number_input("Âge *", min_value=10, max_value=100, value=18)
         with col2:
-            classe = st.selectbox("Classe *", ["", "1ère Année", "2ème Année", "3ème Année", "L1", "L2", "L3", "M1", "M2"])
-            moyenne = st.number_input("Moyenne *", min_value=0.0, max_value=20.0, value=10.0, step=0.01, format="%.2f")
+            classe = st.selectbox(
+                "Classe *",
+                [
+                    "",
+                    "1ère Année",
+                    "2ème Année",
+                    "3ème Année",
+                    "L1",
+                    "L2",
+                    "L3",
+                    "M1",
+                    "M2",
+                ],
+            )
+            moyenne = st.number_input(
+                "Moyenne *",
+                min_value=0.0,
+                max_value=20.0,
+                value=10.0,
+                step=0.01,
+                format="%.2f",
+            )
             st.markdown("")
 
-        st.markdown('<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True)
-        submitted = st.form_submit_button("💾 Enregistrer", type="primary", use_container_width=True)
+        st.markdown(
+            '<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True
+        )
+        submitted = st.form_submit_button(
+            "💾 Enregistrer", type="primary", use_container_width=True
+        )
 
         if submitted:
             if not nom_prenom or not classe:
@@ -197,30 +273,69 @@ elif page == "Ajouter":
 
 elif page == "Modifier":
     etudiant_id = st.session_state.get("editing_id")
-    etudiant = collection.find_one({"_id": ObjectId(etudiant_id)}) if etudiant_id else None
+    etudiant = (
+        collection.find_one({"_id": ObjectId(etudiant_id)}) if etudiant_id else None
+    )
 
     if not etudiant:
         st.markdown("# ⚠️ Aucun étudiant sélectionné")
         st.info("Retournez à la liste et cliquez sur **Modifier** pour un étudiant.")
     else:
         st.markdown(f"# ✏️ {etudiant.get('nom_prenom', '')}")
-        st.markdown(f'<p style="color: #6b7280; margin-top: -12px; font-size: 0.9rem;">N° inscription : <strong>{etudiant.get("numero", "")}</strong></p>', unsafe_allow_html=True)
+        st.markdown(
+            f'<p style="color: #6b7280; margin-top: -12px; font-size: 0.9rem;">N° inscription : <strong>{etudiant.get("numero", "")}</strong></p>',
+            unsafe_allow_html=True,
+        )
 
         with st.form("edit_form"):
             col1, col2 = st.columns(2)
             with col1:
-                st.text_input("N° Inscription", value=etudiant.get("numero", ""), disabled=True)
-                nom_prenom = st.text_input("Nom & Prénom *", value=etudiant.get("nom_prenom", ""))
-                age = st.number_input("Âge *", min_value=10, max_value=100, value=etudiant.get("age", 18))
+                st.text_input(
+                    "N° Inscription", value=etudiant.get("numero", ""), disabled=True
+                )
+                nom_prenom = st.text_input(
+                    "Nom & Prénom *", value=etudiant.get("nom_prenom", "")
+                )
+                age = st.number_input(
+                    "Âge *", min_value=10, max_value=100, value=etudiant.get("age", 18)
+                )
             with col2:
-                classes_list = ["1ère Année", "2ème Année", "3ème Année", "L1", "L2", "L3", "M1", "M2"]
+                classes_list = [
+                    "1ère Année",
+                    "2ème Année",
+                    "3ème Année",
+                    "L1",
+                    "L2",
+                    "L3",
+                    "M1",
+                    "M2",
+                ]
                 current_class = etudiant.get("classe", "")
-                classe = st.selectbox("Classe *", classes_list, index=classes_list.index(current_class) if current_class in classes_list else 0)
-                moyenne = st.number_input("Moyenne *", min_value=0.0, max_value=20.0, value=float(etudiant.get("moyenne", 10.0)), step=0.01, format="%.2f")
+                classe = st.selectbox(
+                    "Classe *",
+                    classes_list,
+                    index=classes_list.index(current_class)
+                    if current_class in classes_list
+                    else 0,
+                )
+                moyenne = st.number_input(
+                    "Moyenne *",
+                    min_value=0.0,
+                    max_value=20.0,
+                    value=float(etudiant.get("moyenne", 10.0)),
+                    step=0.01,
+                    format="%.2f",
+                )
                 st.markdown("")
 
-            st.markdown('<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True)
-            submitted = st.form_submit_button("💾 Enregistrer les modifications", type="primary", use_container_width=True)
+            st.markdown(
+                '<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True
+            )
+            submitted = st.form_submit_button(
+                "💾 Enregistrer les modifications",
+                type="primary",
+                use_container_width=True,
+            )
 
             if submitted:
                 if not nom_prenom or not classe:
