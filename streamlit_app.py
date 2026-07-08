@@ -1,62 +1,90 @@
 import streamlit as st
-import dns.resolver
-
-_orig_resolver_init = dns.resolver.Resolver.__init__
-
-
-def _patched_resolver_init(self, *args, **kwargs):
-    _orig_resolver_init(self, *args, **kwargs)
-    self.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
-
-
-dns.resolver.Resolver.__init__ = _patched_resolver_init
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from dotenv import load_dotenv
 import os
+import json
+import urllib.request
 
 st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout="wide")
+
+from dotenv import load_dotenv
 
 load_dotenv()
 
 try:
-    MONGO_URI = st.secrets["MONGO_URI"]
+    DATA_API_URL = st.secrets["DATA_API_URL"]
+    DATA_API_KEY = st.secrets["DATA_API_KEY"]
     DB_NAME = st.secrets["DB_NAME"]
 except Exception:
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    DATA_API_URL = os.getenv("DATA_API_URL", "")
+    DATA_API_KEY = os.getenv("DATA_API_KEY", "")
     DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
 
+COLLECTION = "etudiants"
 
-@st.cache_resource
-def get_db():
-    client = MongoClient(
-        MONGO_URI,
-        serverSelectionTimeoutMS=15000,
-        connectTimeoutMS=15000,
-        socketTimeoutMS=15000,
-        tls=True,
-        retryWrites=True,
+
+def data_api(action, document=None, filter_query=None, update=None):
+    if not DATA_API_URL or not DATA_API_KEY:
+        st.error("Configuration Data API manquante dans les secrets.")
+        return None
+    payload = {
+        "collection": COLLECTION,
+        "database": DB_NAME,
+        "dataSource": "Cluster0",
+    }
+    payload.update(kwargs)
+    req = urllib.request.Request(
+        f"{DATA_API_URL}/action/{action}",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "api-key": DATA_API_KEY,
+        },
     )
-    return client[DB_NAME]["etudiants"]
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            result = json.loads(resp.read())
+            return (
+                result.get("documents")
+                if "documents" in result
+                else result.get("document")
+            )
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        st.error(f"Data API error {e.code}: {body}")
+        return None
+    except Exception as e:
+        st.error(f"Data API error: {e}")
+        return None
 
 
-collection = get_db()
+def compter_etudiants():
+    docs = data_api("find", filter={}, projection={"_id": 1}, limit=1000)
+    return len(docs) if docs else 0
 
 
 def generer_numero():
-    count = collection.count_documents({})
-    return f"ETU-{str(count + 1).zfill(4)}"
+    docs = data_api(
+        "find", filter={}, projection={"numero": 1}, sort={"numero": -1}, limit=1
+    )
+    if docs:
+        last_num = docs[0].get("numero", "")
+        try:
+            count = int(last_num.split("-")[1])
+        except (ValueError, IndexError):
+            count = 0
+        return f"ETU-{str(count + 1).zfill(4)}"
+    return "ETU-0001"
 
 
 def inserer_etudiant(numero, nom_prenom, age, classe, moyenne):
-    return collection.insert_one(
-        {
+    return data_api(
+        "insertOne",
+        document={
             "numero": numero,
             "nom_prenom": nom_prenom,
             "age": age,
             "classe": classe,
             "moyenne": moyenne,
-        }
+        },
     )
 
 
@@ -68,25 +96,27 @@ def rechercher_etudiants(terme=""):
             {"nom_prenom": {"$regex": terme, "$options": "i"}},
             {"classe": {"$regex": terme, "$options": "i"}},
         ]
-    return list(collection.find(query))
+    docs = data_api("find", filter=query)
+    return docs or []
 
 
 def modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne):
-    collection.update_one(
-        {"_id": ObjectId(etudiant_id)},
-        {
+    return data_api(
+        "updateOne",
+        filter={"_id": {"$oid": etudiant_id}},
+        update={
             "$set": {
                 "nom_prenom": nom_prenom,
                 "age": age,
                 "classe": classe,
                 "moyenne": moyenne,
-            }
+            },
         },
     )
 
 
 def supprimer_etudiant(etudiant_id):
-    collection.delete_one({"_id": ObjectId(etudiant_id)})
+    return data_api("deleteOne", filter={"_id": {"$oid": etudiant_id}})
 
 
 st.markdown(
@@ -153,7 +183,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.markdown("---")
-    st.metric("Étudiants", collection.count_documents({}))
+    st.metric("Étudiants", compter_etudiants())
 
 page = st.radio(
     "Navigation",
@@ -273,9 +303,11 @@ elif page == "Ajouter":
 
 elif page == "Modifier":
     etudiant_id = st.session_state.get("editing_id")
-    etudiant = (
-        collection.find_one({"_id": ObjectId(etudiant_id)}) if etudiant_id else None
-    )
+    etudiant = None
+    if etudiant_id:
+        docs = data_api("find", filter_query={"_id": {"$oid": etudiant_id}})
+        if docs:
+            etudiant = docs[0]
 
     if not etudiant:
         st.markdown("# ⚠️ Aucun étudiant sélectionné")
