@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-import os
 
 try:
     MONGO_URI = st.secrets["MONGO_URI"]
@@ -22,7 +21,14 @@ COLLECTION_NAME = "etudiants"
 
 @st.cache_resource
 def get_db():
-    client = MongoClient(MONGO_URI)
+    client = MongoClient(
+        MONGO_URI,
+        serverSelectionTimeoutMS=10000,
+        connectTimeoutMS=10000,
+        socketTimeoutMS=10000,
+        tls=True,
+        retryWrites=True
+    )
     return client[DB_NAME][COLLECTION_NAME]
 
 
