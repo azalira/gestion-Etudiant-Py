@@ -1,76 +1,12 @@
 import streamlit as st
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from dotenv import load_dotenv
-import os
+from db import compter, lister, trouver, ajouter, modifier, supprimer
 
 st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout="wide")
 
-load_dotenv()
-
-try:
-    MONGO_URI = st.secrets["MONGO_URI"]
-    DB_NAME = st.secrets["DB_NAME"]
-except Exception:
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
-
-MONGO_DIRECT = "mongodb://lazafidera_db_user:2RVHeKP13HlbeyKU@ac-aca4obh-shard-00-00.zb8k0oa.mongodb.net:27017,ac-aca4obh-shard-00-01.zb8k0oa.mongodb.net:27017,ac-aca4obh-shard-00-02.zb8k0oa.mongodb.net:27017/gestion_etudiants?authSource=admin&replicaSet=atlas-c9l8rx-shard-0&tls=true&tlsInsecure=true&serverSelectionTimeoutMS=60000&connectTimeoutMS=60000"
-
-
-@st.cache_resource
-def get_db():
-    client = MongoClient(MONGO_DIRECT)
-    return client[DB_NAME]["etudiants"]
-
-
-collection = get_db()
-
 
 def generer_numero():
-    count = collection.count_documents({})
+    count = compter()
     return f"ETU-{str(count + 1).zfill(4)}"
-
-
-def inserer_etudiant(numero, nom_prenom, age, classe, moyenne):
-    return collection.insert_one(
-        {
-            "numero": numero,
-            "nom_prenom": nom_prenom,
-            "age": age,
-            "classe": classe,
-            "moyenne": moyenne,
-        }
-    )
-
-
-def rechercher_etudiants(terme=""):
-    query = {}
-    if terme:
-        query["$or"] = [
-            {"numero": {"$regex": terme, "$options": "i"}},
-            {"nom_prenom": {"$regex": terme, "$options": "i"}},
-            {"classe": {"$regex": terme, "$options": "i"}},
-        ]
-    return list(collection.find(query))
-
-
-def modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne):
-    collection.update_one(
-        {"_id": ObjectId(etudiant_id)},
-        {
-            "$set": {
-                "nom_prenom": nom_prenom,
-                "age": age,
-                "classe": classe,
-                "moyenne": moyenne,
-            }
-        },
-    )
-
-
-def supprimer_etudiant(etudiant_id):
-    collection.delete_one({"_id": ObjectId(etudiant_id)})
 
 
 st.markdown(
@@ -133,10 +69,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.markdown("---")
-    try:
-        st.metric("Étudiants", collection.count_documents({}))
-    except Exception:
-        st.metric("Étudiants", "❌ Erreur connexion")
+    st.metric("Étudiants", compter())
 
 page = st.radio(
     "Navigation",
@@ -152,11 +85,7 @@ if page == "Liste":
         placeholder="Rechercher par numéro, nom ou classe...",
         label_visibility="collapsed",
     )
-    try:
-        etudiants = rechercher_etudiants(terme)
-    except Exception:
-        st.error("Impossible de se connecter à la base de données.")
-        st.stop()
+    etudiants = lister(terme)
 
     if etudiants:
         import pandas as pd
@@ -185,7 +114,7 @@ if page == "Liste":
                     (e for e in etudiants if e.get("numero") == selected_numero), None
                 )
                 if etudiant_choisi:
-                    st.session_state.editing_id = str(etudiant_choisi["_id"])
+                    st.session_state.editing_id = etudiant_choisi["_id"]
                     st.session_state.page = "Modifier"
                     st.rerun()
         with col3:
@@ -194,7 +123,7 @@ if page == "Liste":
                     (e for e in etudiants if e.get("numero") == selected_numero), None
                 )
                 if etudiant_choisi:
-                    supprimer_etudiant(etudiant_choisi["_id"])
+                    supprimer(etudiant_choisi["_id"])
                     st.success(f"{etudiant_choisi.get('nom_prenom', '')} supprimé.")
                     st.rerun()
     else:
@@ -250,20 +179,23 @@ elif page == "Ajouter":
             if not nom_prenom or not classe:
                 st.error("Veuillez remplir tous les champs obligatoires.")
             else:
-                try:
-                    inserer_etudiant(nouveau_numero, nom_prenom, age, classe, moyenne)
-                    st.success(
-                        f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})"
-                    )
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"Erreur lors de l'ajout : {e}")
+                import uuid
+
+                etudiant = {
+                    "_id": str(uuid.uuid4()),
+                    "numero": nouveau_numero,
+                    "nom_prenom": nom_prenom,
+                    "age": age,
+                    "classe": classe,
+                    "moyenne": moyenne,
+                }
+                ajouter(etudiant)
+                st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
+                st.balloons()
 
 elif page == "Modifier":
     etudiant_id = st.session_state.get("editing_id")
-    etudiant = (
-        collection.find_one({"_id": ObjectId(etudiant_id)}) if etudiant_id else None
-    )
+    etudiant = trouver(etudiant_id) if etudiant_id else None
 
     if not etudiant:
         st.markdown("# ⚠️ Aucun étudiant sélectionné")
@@ -327,10 +259,15 @@ elif page == "Modifier":
                 if not nom_prenom or not classe:
                     st.error("Veuillez remplir tous les champs obligatoires.")
                 else:
-                    try:
-                        modifier_etudiant(etudiant_id, nom_prenom, age, classe, moyenne)
-                        st.success(f"✅ {nom_prenom} modifié avec succès !")
-                        st.session_state.pop("editing_id", None)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erreur lors de la modification : {e}")
+                    modifier(
+                        etudiant_id,
+                        {
+                            "nom_prenom": nom_prenom,
+                            "age": age,
+                            "classe": classe,
+                            "moyenne": moyenne,
+                        },
+                    )
+                    st.success(f"✅ {nom_prenom} modifié avec succès !")
+                    st.session_state.pop("editing_id", None)
+                    st.rerun()
