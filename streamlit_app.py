@@ -7,8 +7,6 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
-import json
-import re
 
 st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout="wide")
 
@@ -17,11 +15,9 @@ load_dotenv()
 try:
     MONGO_URI = st.secrets["MONGO_URI"]
     DB_NAME = st.secrets["DB_NAME"]
-    OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
 except Exception:
     MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 COLLECTION_NAME = "etudiants"
 
 
@@ -386,7 +382,7 @@ with st.sidebar:
     st.markdown('<p style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Application de gestion</p>', unsafe_allow_html=True)
     st.markdown("---")
 
-page = st.radio("Navigation", ["Liste", "Ajouter", "Modifier", "Assistant IA"], horizontal=True, label_visibility="collapsed")
+page = st.radio("Navigation", ["Liste", "Ajouter", "Modifier"], horizontal=True, label_visibility="collapsed")
 
 if page == "Liste":
     st.markdown("# 📋 Liste des Etudiants")
@@ -505,131 +501,3 @@ elif page == "Modifier":
                         st.success(f"{nom_prenom} modifié !")
                         st.session_state.pop("editing_id", None)
                         st.rerun()
-
-elif page == "Assistant IA":
-    st.markdown("# 🤖 Assistant IA")
-    st.markdown('<p style="color: #86868b; margin-top: -10px; font-size: 0.95rem;">Discutez en langage naturel pour gérer vos étudiants</p>', unsafe_allow_html=True)
-
-    if not OPENAI_API_KEY:
-        st.warning("Clé API OpenAI requise. Ajoutez `OPENAI_API_KEY` dans vos secrets Streamlit.")
-        st.code("""
-Dans vos secrets (Settings > Secrets) :
-
-OPENAI_API_KEY = "sk-votre-cle-api"
-        """, language="toml")
-    else:
-        st.info("**Exemples de commandes :** Ajoute un étudiant Dupont Jean, 20 ans, L2, moyenne 15.5 | Liste tous les étudiants | Supprime Dupont | Recherche L2")
-
-        if "chat_messages" not in st.session_state:
-            st.session_state.chat_messages = [
-                {"role": "system", "content": f"""Tu es un assistant de gestion d'étudiants. Tu peux effectuer ces actions:
-- **Ajouter** un étudiant: numero, nom_prenom, age, classe, moyenne
-- **Lister** tous les étudiants ou chercher par nom/classe
-- **Modifier** les informations d'un étudiant
-- **Supprimer** un étudiant
-
-Lorsqu'on te demande d'ajouter un étudiant, réponds avec un JSON comme:
-{{"action": "ajouter", "numero": "2024-001", "nom_prenom": "Dupont Jean", "age": 20, "classe": "L2", "moyenne": 15.5}}
-
-Pour lister: {{"action": "lister"}}
-Pour chercher: {{"action": "chercher", "terme": "L2"}}
-Pour supprimer: {{"action": "supprimer", "nom_prenom": "Dupont"}}
-
-Base de données actuelle: {collection.count_documents({})} étudiant(s).
-Classes disponibles: 1ère Année, 2ème Année, 3ème Année, L1, L2, L3, M1, M2."""}]
-
-        for msg in st.session_state.chat_messages:
-            if msg["role"] != "system":
-                with st.chat_message(msg["role"]):
-                    st.markdown(msg["content"])
-
-        user_input = st.chat_input("Tapez votre commande...")
-
-        if user_input:
-            st.session_state.chat_messages.append({"role": "user", "content": user_input})
-
-            with st.chat_message("user"):
-                st.markdown(user_input)
-
-            with st.spinner("Réflexion..."):
-                import urllib.request
-
-                payload = {
-                    "model": "gpt-4o-mini",
-                    "messages": st.session_state.chat_messages,
-                    "temperature": 0.3,
-                    "max_tokens": 500
-                }
-
-                req = urllib.request.Request(
-                    "https://api.openai.com/v1/chat/completions",
-                    data=json.dumps(payload).encode(),
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {OPENAI_API_KEY}"
-                    }
-                )
-
-                try:
-                    with urllib.request.urlopen(req, timeout=30) as response:
-                        result = json.loads(response.read())
-                    ai_response = result["choices"][0]["message"]["content"]
-                except Exception as e:
-                    ai_response = f"Erreur API: {e}"
-
-            try:
-                parsed = json.loads(ai_response)
-                action = parsed.get("action", "")
-                feedback = ""
-
-                if action == "ajouter":
-                    numero = parsed.get("numero", "")
-                    nom = parsed.get("nom_prenom", "")
-                    age = int(parsed.get("age", 18))
-                    classe = parsed.get("classe", "")
-                    moyenne = float(parsed.get("moyenne", 10))
-
-                    if not numero or not nom:
-                        feedback = "Numéro et nom requis."
-                    elif collection.find_one({"numero": numero}):
-                        feedback = f"Le numéro {numero} existe déjà."
-                    else:
-                        inserer_etudiant(numero, nom, age, classe, moyenne)
-                        feedback = f"✅ {nom} ajouté avec succès ! (N°{numero}, {age} ans, {classe}, moyenne {moyenne})"
-
-                elif action == "lister":
-                    etudiants = list(collection.find())
-                    if etudiants:
-                        lignes = "\n".join([f"- **{e['nom_prenom']}** (N°{e['numero']}, {e['classe']}, moy: {e['moyenne']})" for e in etudiants])
-                        feedback = f"📋 **{len(etudiants)} étudiant(s) :**\n{lignes}"
-                    else:
-                        feedback = "Aucun étudiant dans la base."
-
-                elif action == "chercher":
-                    terme = parsed.get("terme", "")
-                    resultats = rechercher_etudiants(terme)
-                    if resultats:
-                        lignes = "\n".join([f"- **{e['nom_prenom']}** (N°{e['numero']}, {e['classe']}, moy: {e['moyenne']})" for e in resultats])
-                        feedback = f"🔍 **{len(resultats)} résultat(s) pour '{terme}' :**\n{lignes}"
-                    else:
-                        feedback = f"Aucun résultat pour '{terme}'."
-
-                elif action == "supprimer":
-                    nom = parsed.get("nom_prenom", "")
-                    etudiant = collection.find_one({"nom_prenom": {"$regex": nom, "$options": "i"}})
-                    if etudiant:
-                        supprimer_etudiant(etudiant["_id"])
-                        feedback = f"🗑️ {etudiant['nom_prenom']} supprimé."
-                    else:
-                        feedback = f"Aucun étudiant trouvé pour '{nom}'."
-
-                if feedback:
-                    ai_response = feedback
-
-            except (json.JSONDecodeError, KeyError):
-                pass
-
-            st.session_state.chat_messages.append({"role": "assistant", "content": ai_response})
-
-            with st.chat_message("assistant"):
-                st.markdown(ai_response)
