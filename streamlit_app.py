@@ -1,8 +1,14 @@
 import streamlit as st
 import dns.resolver
-_new_resolver = dns.resolver.Resolver()
-_new_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
-dns.resolver.default_resolver = _new_resolver
+import dns.asyncresolver
+
+_orig_resolve = dns.resolver.Resolver.resolve
+
+def _patched_resolve(self, *args, **kwargs):
+    self.nameservers = ['8.8.8.8', '1.1.1.1', '1.0.0.1']
+    return _orig_resolve(self, *args, **kwargs)
+
+dns.resolver.Resolver.resolve = _patched_resolve
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
