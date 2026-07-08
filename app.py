@@ -1,13 +1,22 @@
 import streamlit as st
+import dns.resolver
+_new_resolver = dns.resolver.Resolver()
+_new_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
+dns.resolver.default_resolver = _new_resolver
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
+import os
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
+try:
+    MONGO_URI = st.secrets["MONGO_URI"]
+    DB_NAME = st.secrets["DB_NAME"]
+except (KeyError, FileNotFoundError):
+    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    DB_NAME = os.getenv("DB_NAME", "gestion_etudiants")
 COLLECTION_NAME = "etudiants"
 
 
