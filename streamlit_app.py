@@ -118,14 +118,13 @@ if "page" not in st.session_state:
 
 page = st.radio(
     "Navigation",
-    ["Liste", "Ajouter", "Modifier"],
+    ["Liste", "Ajouter"],
     horizontal=True,
     label_visibility="collapsed",
-    index=["Liste", "Ajouter", "Modifier"].index(st.session_state.page),
+    index=["Liste", "Ajouter"].index(st.session_state.page) if st.session_state.page != "Modifier" else 0,
 )
-if page != st.session_state.page:
+if page != st.session_state.page and st.session_state.page != "Modifier":
     st.session_state.page = page
-    st.session_state.selected_etudiants = []
     if "selected_etudiants" in st.session_state:
         st.session_state.selected_etudiants = []
 
@@ -257,13 +256,19 @@ elif page == "Ajouter":
                 st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
                 st.rerun()
 
-elif page == "Modifier":
+elif page == "Modifier" or st.session_state.get("editing_id"):
+    st.session_state.page = "Modifier"
     etudiant_id = st.session_state.get("editing_id")
     etudiant = trouver(etudiant_id) if etudiant_id else None
 
+    if st.button("⬅️ Retour", key="btn_retour"):
+        st.session_state.pop("editing_id", None)
+        st.session_state.page = "Liste"
+        st.rerun()
+
     if not etudiant:
         st.markdown("# ⚠️ Aucun étudiant sélectionné")
-        st.markdown('<p style="color: #000000;">Retournez à la liste et cliquez sur <strong>Modifier</strong> pour un étudiant.</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color: #000000;">Retournez à la liste et sélectionnez un étudiant.</p>', unsafe_allow_html=True)
     else:
         st.markdown(f"# ✏️ {etudiant.get('nom_prenom', '')}")
         st.markdown(
