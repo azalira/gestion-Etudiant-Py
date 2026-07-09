@@ -142,16 +142,17 @@ if page == "Liste":
 
         if event and event.selection and event.selection.rows:
             selected_idx = event.selection.rows[0]
-            selected_etudiant = etudiants[selected_idx]
-            st.session_state.editing_id = selected_etudiant["_id"]
-            st.session_state.page = "Modifier"
-            st.rerun()
+            st.session_state.selected_numero = etudiants[selected_idx].get("numero", "")
 
         st.markdown("---")
         col1, col2 = st.columns([1, 1])
         with col1:
+            numeros = [e.get("numero", "") for e in etudiants]
+            default_idx = 0
+            if "selected_numero" in st.session_state and st.session_state.selected_numero in numeros:
+                default_idx = numeros.index(st.session_state.selected_numero)
             selected_numero = st.selectbox(
-                "Sélectionner un étudiant", [e.get("numero", "") for e in etudiants]
+                "Sélectionner un étudiant", numeros, index=default_idx
             )
         with col2:
             if st.button("✏️ Modifier", use_container_width=True):
