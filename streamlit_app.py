@@ -121,14 +121,17 @@ page = st.radio(
     ["Liste", "Ajouter"],
     horizontal=True,
     label_visibility="collapsed",
-    index=["Liste", "Ajouter"].index(st.session_state.page) if st.session_state.page != "Modifier" else 0,
+    index=0 if st.session_state.page == "Modifier" else ["Liste", "Ajouter"].index(st.session_state.page),
 )
 if page != st.session_state.page and st.session_state.page != "Modifier":
     st.session_state.page = page
     if "selected_etudiants" in st.session_state:
         st.session_state.selected_etudiants = []
 
-if page == "Liste":
+if st.session_state.get("editing_id"):
+    st.session_state.page = "Modifier"
+
+if page == "Liste" and st.session_state.page != "Modifier":
     st.markdown("# 📋 Liste des Étudiants")
     terme = st.text_input(
         "Rechercher",
@@ -190,7 +193,7 @@ if page == "Liste":
     else:
         st.info("Aucun étudiant trouvé.")
 
-elif page == "Ajouter":
+elif page == "Ajouter" and st.session_state.page != "Modifier":
     st.markdown("# ➕ Nouvel Étudiant")
     st.markdown(
         '<p style="color: #6b7280; margin-top: -12px; font-size: 0.9rem;">Remplissez les informations ci-dessous</p>',
@@ -256,14 +259,12 @@ elif page == "Ajouter":
                 st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
                 st.rerun()
 
-elif page == "Modifier" or st.session_state.get("editing_id"):
-    st.session_state.page = "Modifier"
+if st.session_state.get("editing_id"):
     etudiant_id = st.session_state.get("editing_id")
     etudiant = trouver(etudiant_id) if etudiant_id else None
 
     if st.button("⬅️ Retour", key="btn_retour"):
         st.session_state.pop("editing_id", None)
-        st.session_state.page = "Liste"
         st.rerun()
 
     if not etudiant:
