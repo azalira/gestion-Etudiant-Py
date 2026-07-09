@@ -46,11 +46,11 @@ st.markdown(
     .stButton > button[kind="primary"]:hover, div[data-testid="stFormSubmitButton"] > button:hover { background: var(--accent-hover) !important; }
     div[data-testid="stForm"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; padding: 2rem 2.5rem !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; }
     .stRadio > div { background: var(--card) !important; border: 1.5px solid var(--border) !important; border-radius: var(--radius) !important; padding: 4px !important; }
-    .stRadio > div > div > label { border-radius: 8px !important; padding: 8px 18px !important; font-weight: 500 !important; color: var(--text) !important; }
+    .stRadio > div > div > label { border-radius: 8px !important; padding: 8px 18px !important; font-weight: 500 !important; color: #000000 !important; }
     .stRadio > div > div > div[data-checked="true"] > label { background: var(--accent) !important; color: white !important; }
-    [data-baseweb="radio"] span { color: var(--text) !important; }
-    [data-baseweb="radio"] input[type="radio"] { accent-color: var(--accent) !important; }
-    [data-baseweb="radio"]:checked ~ span { color: white !important; }
+    .stRadio label { color: #000000 !important; }
+    .stRadio span { color: #000000 !important; }
+    .stRadio div[data-checked="true"] span { color: white !important; }
     .stDataFrame { border-radius: 12px !important; overflow: hidden !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; border: 1px solid var(--border) !important; }
     [data-testid="stDataFrame"] th { background: #f8fafc !important; font-weight: 600 !important; text-transform: uppercase !important; font-size: 0.72rem !important; letter-spacing: 0.06em !important; color: var(--text-muted) !important; padding: 12px 16px !important; border-bottom: 1.5px solid var(--border) !important; }
     [data-testid="stDataFrame"] td { padding: 12px 16px !important; border-bottom: 1px solid #f1f5f9 !important; font-size: 0.9rem !important; color: var(--text) !important; }
