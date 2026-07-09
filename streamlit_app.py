@@ -53,8 +53,9 @@ st.markdown(
     [data-testid="stDataFrame"] td { padding: 12px 16px !important; border-bottom: 1px solid #f1f5f9 !important; font-size: 0.9rem !important; }
     [data-testid="stDataFrame"] tr:hover td { background: #f8fafc !important; }
     .stTextInput label, .stNumberInput label, .stSelectbox label { font-weight: 500 !important; color: var(--text) !important; font-size: 0.82rem !important; margin-bottom: 2px !important; font-family: 'Inter', sans-serif !important; white-space: nowrap !important; }
-    .stTextInput input, .stNumberInput input, .stSelectbox input, .stTextArea textarea { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
-    .stTextInput > div > div > input::placeholder { -webkit-text-fill-color: rgba(255,255,255,0.5) !important; }
+    .stTextInput > div > div > input, .stNumberInput > div > div > input { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .stTextInput > div > div > input::placeholder { -webkit-text-fill-color: var(--text-muted) !important; }
+    .stTextInput > div > div > input:disabled, .stNumberInput > div > div > input:disabled { background: #f8fafc !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; border-color: var(--border) !important; }
     div[data-testid="stMetric"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 12px !important; padding: 20px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important; }
     .form-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; }
 </style>
@@ -138,13 +139,11 @@ elif page == "Ajouter":
     nouveau_numero = generer_numero()
 
     with st.form("add_form", clear_on_submit=True):
+        st.text_input("N° Inscription", value=nouveau_numero, disabled=True, key="auto_num")
         col1, col2 = st.columns(2)
         with col1:
-            st.text_input(
-                "N° Inscription", value=nouveau_numero, disabled=True, key="auto_num"
-            )
             nom_prenom = st.text_input("Nom & Prénom *", placeholder="Ex: Dupont Jean")
-            age = st.number_input("Âge *", min_value=10, max_value=100, value=18)
+            age = st.text_input("Âge *", value="18", placeholder="Ex: 20")
         with col2:
             classe = st.selectbox(
                 "Classe *",
@@ -160,15 +159,7 @@ elif page == "Ajouter":
                     "M2",
                 ],
             )
-            moyenne = st.number_input(
-                "Moyenne *",
-                min_value=0.0,
-                max_value=20.0,
-                value=10.0,
-                step=0.01,
-                format="%.2f",
-            )
-            st.markdown("")
+            moyenne = st.text_input("Moyenne *", value="10.00", placeholder="Ex: 14.50")
         st.markdown(
             '<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True
         )
@@ -176,22 +167,33 @@ elif page == "Ajouter":
             "💾 Enregistrer", type="primary", use_container_width=True
         )
         if submitted:
-            if not nom_prenom or not classe:
+            if not nom_prenom or not classe or not age or not moyenne:
                 st.error("Veuillez remplir tous les champs obligatoires.")
             else:
-                import uuid
+                try:
+                    age_val = int(age)
+                    moyenne_val = float(moyenne)
+                except ValueError:
+                    st.error("Âge doit être un entier et Moyenne doit être un nombre.")
+                else:
+                    if age_val < 10 or age_val > 100:
+                        st.error("L'âge doit être entre 10 et 100 ans.")
+                    elif moyenne_val < 0 or moyenne_val > 20:
+                        st.error("La moyenne doit être entre 0 et 20.")
+                    else:
+                        import uuid
 
-                etudiant = {
-                    "_id": str(uuid.uuid4()),
-                    "numero": nouveau_numero,
-                    "nom_prenom": nom_prenom,
-                    "age": age,
-                    "classe": classe,
-                    "moyenne": moyenne,
-                }
-                ajouter(etudiant)
-                st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
-                st.balloons()
+                        etudiant = {
+                            "_id": str(uuid.uuid4()),
+                            "numero": nouveau_numero,
+                            "nom_prenom": nom_prenom,
+                            "age": age_val,
+                            "classe": classe,
+                            "moyenne": round(moyenne_val, 2),
+                        }
+                        ajouter(etudiant)
+                        st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
+                        st.balloons()
 
 elif page == "Modifier":
     etudiant_id = st.session_state.get("editing_id")
@@ -208,16 +210,16 @@ elif page == "Modifier":
         )
 
         with st.form("edit_form"):
+            st.text_input(
+                "N° Inscription", value=etudiant.get("numero", ""), disabled=True
+            )
             col1, col2 = st.columns(2)
             with col1:
-                st.text_input(
-                    "N° Inscription", value=etudiant.get("numero", ""), disabled=True
-                )
                 nom_prenom = st.text_input(
                     "Nom & Prénom *", value=etudiant.get("nom_prenom", "")
                 )
-                age = st.number_input(
-                    "Âge *", min_value=10, max_value=100, value=etudiant.get("age", 18)
+                age = st.text_input(
+                    "Âge *", value=str(etudiant.get("age", 18))
                 )
             with col2:
                 classes_list = [
@@ -238,15 +240,10 @@ elif page == "Modifier":
                     if current_class in classes_list
                     else 0,
                 )
-                moyenne = st.number_input(
+                moyenne = st.text_input(
                     "Moyenne *",
-                    min_value=0.0,
-                    max_value=20.0,
-                    value=float(etudiant.get("moyenne", 10.0)),
-                    step=0.01,
-                    format="%.2f",
+                    value=f"{float(etudiant.get('moyenne', 10.0)):.2f}",
                 )
-                st.markdown("")
             st.markdown(
                 '<p class="form-note">* Champs obligatoires</p>', unsafe_allow_html=True
             )
@@ -256,18 +253,29 @@ elif page == "Modifier":
                 use_container_width=True,
             )
             if submitted:
-                if not nom_prenom or not classe:
+                if not nom_prenom or not classe or not age or not moyenne:
                     st.error("Veuillez remplir tous les champs obligatoires.")
                 else:
-                    modifier(
-                        etudiant_id,
-                        {
-                            "nom_prenom": nom_prenom,
-                            "age": age,
-                            "classe": classe,
-                            "moyenne": moyenne,
-                        },
-                    )
-                    st.success(f"✅ {nom_prenom} modifié avec succès !")
-                    st.session_state.pop("editing_id", None)
-                    st.rerun()
+                    try:
+                        age_val = int(age)
+                        moyenne_val = float(moyenne)
+                    except ValueError:
+                        st.error("Âge doit être un entier et Moyenne doit être un nombre.")
+                    else:
+                        if age_val < 10 or age_val > 100:
+                            st.error("L'âge doit être entre 10 et 100 ans.")
+                        elif moyenne_val < 0 or moyenne_val > 20:
+                            st.error("La moyenne doit être entre 0 et 20.")
+                        else:
+                            modifier(
+                                etudiant_id,
+                                {
+                                    "nom_prenom": nom_prenom,
+                                    "age": age_val,
+                                    "classe": classe,
+                                    "moyenne": round(moyenne_val, 2),
+                                },
+                            )
+                            st.success(f"✅ {nom_prenom} modifié avec succès !")
+                            st.session_state.pop("editing_id", None)
+                            st.rerun()
