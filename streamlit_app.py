@@ -83,14 +83,18 @@ with st.sidebar:
 if "page" not in st.session_state:
     st.session_state.page = "Liste"
 
+def on_page_change():
+    st.session_state.page = st.session_state.nav_key
+
 page = st.radio(
     "Navigation",
     ["Liste", "Ajouter", "Modifier"],
     horizontal=True,
     label_visibility="collapsed",
+    key="nav_key",
+    on_change=on_page_change,
     index=["Liste", "Ajouter", "Modifier"].index(st.session_state.page),
 )
-st.session_state.page = page
 
 if page == "Liste":
     st.markdown("# 📋 Liste des Étudiants")
@@ -130,6 +134,7 @@ if page == "Liste":
                 if etudiant_choisi:
                     st.session_state.editing_id = etudiant_choisi["_id"]
                     st.session_state.page = "Modifier"
+                    st.session_state.nav_key = "Modifier"
                     st.rerun()
         with col3:
             if st.button("🗑️ Supprimer", type="primary", use_container_width=True):
