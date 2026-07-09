@@ -148,15 +148,30 @@ if page == "Liste":
 
         if st.session_state.selected_etudiants:
             st.markdown("### Étudiants sélectionnés")
-            for etu in st.session_state.selected_etudiants:
-                st.markdown(
-                    f'<div style="background:#f0f2f5;border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px;margin-bottom:6px;">'
-                    f'<strong>{etu.get("nom_prenom", "")}</strong> — '
-                    f'N° {etu.get("numero", "")} | Âge: {etu.get("age", "")} | '
-                    f'Classe: {etu.get("classe", "")} | Moyenne: {etu.get("moyenne", "")}'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
+            for idx, etu in enumerate(st.session_state.selected_etudiants):
+                col_info, col_mod, col_sup = st.columns([5, 1, 1])
+                with col_info:
+                    st.markdown(
+                        f'<div style="background:#f0f2f5;border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px;margin-bottom:6px;">'
+                        f'<strong>{etu.get("nom_prenom", "")}</strong> — '
+                        f'N° {etu.get("numero", "")} | Âge: {etu.get("age", "")} | '
+                        f'Classe: {etu.get("classe", "")} | Moyenne: {etu.get("moyenne", "")}'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                with col_mod:
+                    if st.button("✏️ Modifier", key=f"mod_{idx}", use_container_width=True):
+                        st.session_state.editing_id = etu["_id"]
+                        st.session_state.page = "Modifier"
+                        st.rerun()
+                with col_sup:
+                    if st.button("🗑️ Supprimer", key=f"del_{idx}", type="primary", use_container_width=True):
+                        supprimer(etu["_id"])
+                        st.session_state.selected_etudiants = [
+                            e for e in st.session_state.selected_etudiants if e["_id"] != etu["_id"]
+                        ]
+                        st.success(f"{etu.get('nom_prenom', '')} supprimé.")
+                        st.rerun()
 
         st.markdown("---")
         col1, col2 = st.columns([1, 1])
