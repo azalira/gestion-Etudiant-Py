@@ -210,29 +210,40 @@ elif page == "Ajouter":
                 st.error("Veuillez remplir tous les champs obligatoires.")
             else:
                 try:
-                    age_val = int(age)
-                    moyenne_val = float(moyenne)
-                except ValueError:
-                    st.error("Âge doit être un entier et Moyenne doit être un nombre.")
-                else:
+                    age_val = int(age.strip())
                     if age_val < 10 or age_val > 100:
                         st.error("L'âge doit être entre 10 et 100 ans.")
-                    elif moyenne_val < 0 or moyenne_val > 20:
-                        st.error("La moyenne doit être entre 0 et 20.")
-                    else:
-                        import uuid
+                        st.stop()
+                except ValueError:
+                    st.error("L'âge doit être un nombre entier valide.")
+                    st.stop()
 
-                        etudiant = {
-                            "_id": str(uuid.uuid4()),
-                            "numero": nouveau_numero,
-                            "nom_prenom": nom_prenom,
-                            "age": age_val,
-                            "classe": classe,
-                            "moyenne": round(moyenne_val, 2),
-                        }
-                        ajouter(etudiant)
-                        st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
-                        st.balloons()
+                try:
+                    moyenne_val = float(moyenne.strip().replace(",", "."))
+                    if moyenne_val < 0 or moyenne_val > 20:
+                        st.error("La moyenne doit être entre 0 et 20.")
+                        st.stop()
+                except ValueError:
+                    st.error("La moyenne doit être un nombre valide.")
+                    st.stop()
+
+                if len(nom_prenom.strip()) < 2:
+                    st.error("Le nom doit contenir au moins 2 caractères.")
+                    st.stop()
+
+                import uuid
+
+                etudiant = {
+                    "_id": str(uuid.uuid4()),
+                    "numero": nouveau_numero,
+                    "nom_prenom": nom_prenom.strip(),
+                    "age": age_val,
+                    "classe": classe,
+                    "moyenne": round(moyenne_val, 2),
+                }
+                ajouter(etudiant)
+                st.success(f"✅ {nom_prenom} ajouté avec succès ! ({nouveau_numero})")
+                st.rerun()
 
 elif page == "Modifier":
     etudiant_id = st.session_state.get("editing_id")
@@ -287,25 +298,36 @@ elif page == "Modifier":
                     st.error("Veuillez remplir tous les champs obligatoires.")
                 else:
                     try:
-                        age_val = int(age)
-                        moyenne_val = float(moyenne)
-                    except ValueError:
-                        st.error("Âge doit être un entier et Moyenne doit être un nombre.")
-                    else:
+                        age_val = int(age.strip())
                         if age_val < 10 or age_val > 100:
                             st.error("L'âge doit être entre 10 et 100 ans.")
-                        elif moyenne_val < 0 or moyenne_val > 20:
+                            st.stop()
+                    except ValueError:
+                        st.error("L'âge doit être un nombre entier valide.")
+                        st.stop()
+
+                    try:
+                        moyenne_val = float(moyenne.strip().replace(",", "."))
+                        if moyenne_val < 0 or moyenne_val > 20:
                             st.error("La moyenne doit être entre 0 et 20.")
-                        else:
-                            modifier(
-                                etudiant_id,
-                                {
-                                    "nom_prenom": nom_prenom,
-                                    "age": age_val,
-                                    "classe": classe,
-                                    "moyenne": round(moyenne_val, 2),
-                                },
-                            )
-                            st.success(f"✅ {nom_prenom} modifié avec succès !")
-                            st.session_state.pop("editing_id", None)
-                            st.rerun()
+                            st.stop()
+                    except ValueError:
+                        st.error("La moyenne doit être un nombre valide.")
+                        st.stop()
+
+                    if len(nom_prenom.strip()) < 2:
+                        st.error("Le nom doit contenir au moins 2 caractères.")
+                        st.stop()
+
+                    modifier(
+                        etudiant_id,
+                        {
+                            "nom_prenom": nom_prenom.strip(),
+                            "age": age_val,
+                            "classe": classe,
+                            "moyenne": round(moyenne_val, 2),
+                        },
+                    )
+                    st.success(f"✅ {nom_prenom} modifié avec succès !")
+                    st.session_state.pop("editing_id", None)
+                    st.rerun()
