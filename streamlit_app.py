@@ -116,22 +116,21 @@ with st.sidebar:
 if "page" not in st.session_state:
     st.session_state.page = "Liste"
 
-page = st.radio(
-    "Navigation",
-    ["Liste", "Ajouter"],
-    horizontal=True,
-    label_visibility="collapsed",
-    index=0 if st.session_state.page == "Modifier" else ["Liste", "Ajouter"].index(st.session_state.page),
-)
-if page != st.session_state.page and st.session_state.page != "Modifier":
+editing = st.session_state.get("editing_id")
+
+if not editing:
+    page = st.radio(
+        "Navigation",
+        ["Liste", "Ajouter"],
+        horizontal=True,
+        label_visibility="collapsed",
+        index=["Liste", "Ajouter"].index(st.session_state.page) if st.session_state.page in ["Liste", "Ajouter"] else 0,
+    )
     st.session_state.page = page
-    if "selected_etudiants" in st.session_state:
-        st.session_state.selected_etudiants = []
+else:
+    page = "Modifier"
 
-if st.session_state.get("editing_id"):
-    st.session_state.page = "Modifier"
-
-if page == "Liste" and st.session_state.page != "Modifier":
+if page == "Liste":
     st.markdown("# 📋 Liste des Étudiants")
     terme = st.text_input(
         "Rechercher",
@@ -193,7 +192,7 @@ if page == "Liste" and st.session_state.page != "Modifier":
     else:
         st.info("Aucun étudiant trouvé.")
 
-elif page == "Ajouter" and st.session_state.page != "Modifier":
+elif page == "Ajouter":
     st.markdown("# ➕ Nouvel Étudiant")
     st.markdown(
         '<p style="color: #6b7280; margin-top: -12px; font-size: 0.9rem;">Remplissez les informations ci-dessous</p>',
