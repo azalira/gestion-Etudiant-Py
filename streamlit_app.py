@@ -265,6 +265,7 @@ if st.session_state.get("editing_id"):
 
     if st.button("⬅️ Retour", key="btn_retour"):
         st.session_state.pop("editing_id", None)
+        st.session_state.page = "Liste"
         st.rerun()
 
     if not etudiant:
