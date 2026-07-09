@@ -173,37 +173,6 @@ if page == "Liste":
                         st.success(f"{etu.get('nom_prenom', '')} supprimé.")
                         st.rerun()
 
-        st.markdown("---")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            numeros = [e.get("numero", "") for e in etudiants]
-            default_idx = 0
-            if "selected_etudiants" in st.session_state and st.session_state.selected_etudiants:
-                first_numero = st.session_state.selected_etudiants[0].get("numero", "")
-                if first_numero in numeros:
-                    default_idx = numeros.index(first_numero)
-            selected_numero = st.selectbox(
-                "Sélectionner un étudiant", numeros, index=default_idx
-            )
-        with col2:
-            if st.button("✏️ Modifier", use_container_width=True):
-                etudiant_choisi = next(
-                    (e for e in etudiants if e.get("numero") == selected_numero), None
-                )
-                if etudiant_choisi:
-                    st.session_state.editing_id = etudiant_choisi["_id"]
-                    st.session_state.page = "Modifier"
-                    st.rerun()
-        col_del1, col_del2 = st.columns([1, 1])
-        with col_del2:
-            if st.button("🗑️ Supprimer", type="primary", use_container_width=True):
-                etudiant_choisi = next(
-                    (e for e in etudiants if e.get("numero") == selected_numero), None
-                )
-                if etudiant_choisi:
-                    supprimer(etudiant_choisi["_id"])
-                    st.success(f"{etudiant_choisi.get('nom_prenom', '')} supprimé.")
-                    st.rerun()
     else:
         st.info("Aucun étudiant trouvé.")
 
