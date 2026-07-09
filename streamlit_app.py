@@ -45,7 +45,7 @@ st.markdown(
     .stButton > button[kind="primary"], div[data-testid="stFormSubmitButton"] > button { background: var(--accent) !important; color: white !important; border: none !important; font-weight: 600 !important; }
     .stButton > button[kind="primary"]:hover, div[data-testid="stFormSubmitButton"] > button:hover { background: var(--accent-hover) !important; }
     div[data-testid="stForm"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; padding: 2rem 2.5rem !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; }
-    .stRadio > div { background: var(--card) !important; border: 1.5px solid var(--border) !important; border-radius: var(--radius) !important; padding: 4px !important; }
+    .stRadio > div { background: #000000 !important; border: 1.5px solid #000000 !important; border-radius: var(--radius) !important; padding: 4px !important; }
     .stRadio > div > div > label { border-radius: 8px !important; padding: 8px 18px !important; font-weight: 500 !important; color: #000000 !important; }
     .stRadio > div > div > div[data-checked="true"] > label { background: var(--accent) !important; color: white !important; }
     .stRadio label { color: #000000 !important; }
