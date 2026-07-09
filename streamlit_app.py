@@ -113,6 +113,8 @@ page = st.radio(
 )
 if page != st.session_state.page:
     st.session_state.page = page
+    if "selected_etudiants" in st.session_state:
+        st.session_state.selected_etudiants = []
 
 if page == "Liste":
     st.markdown("# 📋 Liste des Étudiants")
@@ -140,10 +142,10 @@ if page == "Liste":
 
         event = st.dataframe(df, use_container_width=True, hide_index=False, on_select="rerun")
 
-        if event and event.selection and event.selection.rows:
+        if event and event.selection:
             selected_indices = event.selection.rows
             st.session_state.selected_etudiants = [etudiants[i] for i in selected_indices if i < len(etudiants)]
-        elif "selected_etudiants" not in st.session_state:
+        elif not event or not event.selection:
             st.session_state.selected_etudiants = []
 
         if st.session_state.selected_etudiants:
