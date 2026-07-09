@@ -103,8 +103,6 @@ with st.sidebar:
 
 if "page" not in st.session_state:
     st.session_state.page = "Liste"
-if "selected_numero" not in st.session_state:
-    st.session_state.selected_numero = ""
 
 page = st.radio(
     "Navigation",
@@ -115,6 +113,7 @@ page = st.radio(
 )
 if page != st.session_state.page:
     st.session_state.page = page
+    st.session_state.selected_etudiants = []
     if "selected_etudiants" in st.session_state:
         st.session_state.selected_etudiants = []
 
@@ -144,32 +143,38 @@ if page == "Liste":
 
         event = st.dataframe(df, use_container_width=True, hide_index=False, on_select="rerun")
 
-        if event and event.selection and event.selection.rows:
-            selected_idx = event.selection.rows[0]
-            if selected_idx < len(etudiants):
-                st.session_state.selected_numero = etudiants[selected_idx].get("numero", "")
+        if event and event.selection:
+            selected_indices = event.selection.rows
+            st.session_state.selected_etudiants = [etudiants[i] for i in selected_indices if i < len(etudiants)]
+        elif not event or not event.selection:
+            st.session_state.selected_etudiants = []
 
-        st.markdown("---")
-        numero_list = [e.get("numero", "") for e in etudiants]
-        current_index = numero_list.index(st.session_state.selected_numero) if st.session_state.selected_numero in numero_list else 0
-
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            selected_numero = st.selectbox(
-                "Sélectionner un étudiant",
-                numero_list,
-                index=current_index,
-            )
-            st.session_state.selected_numero = selected_numero
-        with col2:
-            if st.button("✏️ Modifier", use_container_width=True):
-                etudiant_choisi = next(
-                    (e for e in etudiants if e.get("numero") == selected_numero), None
-                )
-                if etudiant_choisi:
-                    st.session_state.editing_id = etudiant_choisi["_id"]
-                    st.session_state.page = "Modifier"
-                    st.rerun()
+        if st.session_state.selected_etudiants:
+            st.markdown("### Étudiants sélectionnés")
+            for idx, etu in enumerate(st.session_state.selected_etudiants):
+                col_info, col_mod, col_sup = st.columns([5, 1, 1])
+                with col_info:
+                    st.markdown(
+                        f'<div style="background:#1a1d23;border:1px solid #333;border-radius:8px;padding:10px 16px;margin-bottom:6px;color:#ffffff;">'
+                        f'<strong>{etu.get("nom_prenom", "")}</strong> — '
+                        f'N° {etu.get("numero", "")} | Âge: {etu.get("age", "")} | '
+                        f'Classe: {etu.get("classe", "")} | Moyenne: {etu.get("moyenne", "")}'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+                with col_mod:
+                    if st.button("✏️ Modifier", key=f"mod_{idx}", use_container_width=True):
+                        st.session_state.editing_id = etu["_id"]
+                        st.session_state.page = "Modifier"
+                        st.rerun()
+                with col_sup:
+                    if st.button("🗑️ Supprimer", key=f"del_{idx}", type="primary", use_container_width=True):
+                        supprimer(etu["_id"])
+                        st.session_state.selected_etudiants = [
+                            e for e in st.session_state.selected_etudiants if e["_id"] != etu["_id"]
+                        ]
+                        st.success(f"{etu.get('nom_prenom', '')} supprimé.")
+                        st.rerun()
 
     else:
         st.info("Aucun étudiant trouvé.")
