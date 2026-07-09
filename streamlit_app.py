@@ -61,6 +61,9 @@ st.markdown(
     .stTextInput > div > div > input, .stNumberInput > div > div > input { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
     .stTextInput > div > div > input::placeholder { -webkit-text-fill-color: var(--text-muted) !important; }
     .stTextInput > div > div > input:disabled, .stNumberInput > div > div > input:disabled { background: #f8fafc !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; border-color: var(--border) !important; }
+    .stAlert > div { color: #000000 !important; }
+    .stAlert p { color: #000000 !important; }
+    .stAlert div[data-testid="stMarkdownContainer"] { color: #000000 !important; }
     div[data-testid="stMetric"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 12px !important; padding: 20px !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important; }
     [data-testid="stSidebar"] div[data-testid="stMetric"] { background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.12) !important; }
     [data-testid="stSidebar"] div[data-testid="stMetric"] label { color: rgba(255,255,255,0.6) !important; }
