@@ -58,7 +58,7 @@ st.markdown(
     [data-testid="stDataFrame"] [data-testid="stDataFrameCell"] { color: var(--text) !important; }
     [data-testid="stDataFrame"] div { color: var(--text) !important; }
     .stTextInput label, .stNumberInput label, .stSelectbox label { font-weight: 500 !important; color: var(--text) !important; font-size: 0.82rem !important; margin-bottom: 2px !important; font-family: 'Inter', sans-serif !important; white-space: nowrap !important; }
-    .stTextInput > div > div > input, .stNumberInput > div > div > input { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
+    .stTextInput > div > div > input, .stNumberInput > div > div > input { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; caret-color: #000000 !important; }
     .stTextInput > div > div > input::placeholder { -webkit-text-fill-color: var(--text-muted) !important; }
     .stTextInput > div > div > input:disabled, .stNumberInput > div > div > input:disabled { background: #f8fafc !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; border-color: var(--border) !important; }
     .stAlert > div { color: #000000 !important; }
