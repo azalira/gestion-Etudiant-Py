@@ -21,11 +21,12 @@ st.markdown(
         --red: #dc2626; --red-bg: rgba(220,38,38,0.08);
         --border: #e5e7eb; --border-focus: #2563eb; --radius: 10px;
     }
-    .stApp { background: var(--bg) !important; font-family: 'Inter', sans-serif !important; }
+    .stApp { background: var(--bg) !important; font-family: 'Inter', sans-serif !important; transition: background 0.2s ease !important; }
     .stApp > header { background: transparent !important; }
-    .main .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; max-width: 1100px !important; }
+    .main .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; max-width: 1100px !important; animation: fadeIn 0.3s ease !important; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     h1, h2, h3 { font-family: 'Inter', sans-serif !important; color: var(--text) !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
-    [data-testid="stSidebar"] { background: var(--sidebar-bg) !important; }
+    [data-testid="stSidebar"] { background: var(--sidebar-bg) !important; transition: background 0.2s ease !important; }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #fff !important; }
     [data-testid="stSidebar"] .stRadio > div { background: transparent !important; border: none !important; }
     [data-testid="stSidebar"] .stRadio > div > div > label { color: rgba(255,255,255,0.7) !important; padding: 10px 16px !important; border-radius: var(--radius) !important; }
@@ -35,25 +36,28 @@ st.markdown(
         background: var(--card) !important; color: var(--text) !important;
         border: 1.5px solid var(--border) !important; border-radius: var(--radius) !important;
         padding: 10px 14px !important; font-size: 0.92rem !important; font-family: 'Inter', sans-serif !important; width: 100% !important;
+        transition: all 0.2s ease !important;
     }
     .stTextInput > div > div > input:focus, .stNumberInput > div > div > input:focus {
         border-color: var(--border-focus) !important; box-shadow: 0 0 0 3px var(--accent-bg) !important;
+        outline: none !important;
     }
-    .stSelectbox > div > div { background: var(--card) !important; color: var(--text) !important; border: 1.5px solid var(--border) !important; border-radius: var(--radius) !important; }
-    .stButton > button { background: var(--card) !important; color: var(--text) !important; border: 1.5px solid var(--border) !important; border-radius: var(--radius) !important; padding: 8px 20px !important; font-weight: 500 !important; font-size: 0.88rem !important; font-family: 'Inter', sans-serif !important; width: 100% !important; }
-    .stButton > button:hover { border-color: var(--accent) !important; color: var(--accent) !important; }
+    .stSelectbox > div > div { background: var(--card) !important; color: var(--text) !important; border: 1.5px solid var(--border) !important; border-radius: var(--radius) !important; transition: all 0.2s ease !important; }
+    .stButton > button { background: var(--card) !important; color: var(--text) !important; border: 1.5px solid var(--border) !important; border-radius: var(--radius) !important; padding: 8px 20px !important; font-weight: 500 !important; font-size: 0.88rem !important; font-family: 'Inter', sans-serif !important; width: 100% !important; transition: all 0.2s ease !important; }
+    .stButton > button:hover { border-color: var(--accent) !important; color: var(--accent) !important; transform: translateY(-1px) !important; }
+    .stButton > button:active { transform: translateY(0) !important; }
     .stButton > button[kind="primary"], div[data-testid="stFormSubmitButton"] > button { background: var(--accent) !important; color: white !important; border: none !important; font-weight: 600 !important; }
-    .stButton > button[kind="primary"]:hover, div[data-testid="stFormSubmitButton"] > button:hover { background: var(--accent-hover) !important; }
-    div[data-testid="stForm"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; padding: 2rem 2.5rem !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; }
+    .stButton > button[kind="primary"]:hover, div[data-testid="stFormSubmitButton"] > button:hover { background: var(--accent-hover) !important; transform: translateY(-1px) !important; }
+    div[data-testid="stForm"] { background: var(--card) !important; border: 1px solid var(--border) !important; border-radius: 14px !important; padding: 2rem 2.5rem !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; transition: all 0.3s ease !important; }
     .stRadio > div { background: #000000 !important; border: 1.5px solid #000000 !important; border-radius: var(--radius) !important; padding: 4px !important; }
-    .stRadio > div > div > label { border-radius: 8px !important; padding: 8px 18px !important; font-weight: 500 !important; color: #000000 !important; }
+    .stRadio > div > div > label { border-radius: 8px !important; padding: 8px 18px !important; font-weight: 500 !important; color: #000000 !important; transition: all 0.2s ease !important; }
     .stRadio > div > div > div[data-checked="true"] > label { background: var(--accent) !important; color: white !important; }
     .stRadio label { color: #000000 !important; }
     .stRadio span { color: #000000 !important; }
     .stRadio div[data-checked="true"] span { color: white !important; }
-    .stDataFrame { border-radius: 12px !important; overflow: hidden !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; border: 1px solid var(--border) !important; }
+    .stDataFrame { border-radius: 12px !important; overflow: hidden !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; border: 1px solid var(--border) !important; transition: all 0.2s ease !important; }
     [data-testid="stDataFrame"] th { background: #f8fafc !important; font-weight: 600 !important; text-transform: uppercase !important; font-size: 0.72rem !important; letter-spacing: 0.06em !important; color: var(--text-muted) !important; padding: 12px 16px !important; border-bottom: 1.5px solid var(--border) !important; }
-    [data-testid="stDataFrame"] td { padding: 12px 16px !important; border-bottom: 1px solid #f1f5f9 !important; font-size: 0.9rem !important; color: var(--text) !important; }
+    [data-testid="stDataFrame"] td { padding: 12px 16px !important; border-bottom: 1px solid #f1f5f9 !important; font-size: 0.9rem !important; color: var(--text) !important; transition: background 0.15s ease !important; }
     [data-testid="stDataFrame"] tr:hover td { background: #f8fafc !important; }
     [data-testid="stDataFrame"] [data-testid="stDataFrameCell"] { color: var(--text) !important; }
     [data-testid="stDataFrame"] div { color: var(--text) !important; }
