@@ -215,7 +215,7 @@ elif page == "Modifier":
 
     if not etudiant:
         st.markdown("# ⚠️ Aucun étudiant sélectionné")
-        st.info("Retournez à la liste et cliquez sur **Modifier** pour un étudiant.")
+        st.markdown('<p style="color: #000000;">Retournez à la liste et cliquez sur <strong>Modifier</strong> pour un étudiant.</p>', unsafe_allow_html=True)
     else:
         st.markdown(f"# ✏️ {etudiant.get('nom_prenom', '')}")
         st.markdown(
