@@ -5,8 +5,20 @@ st.set_page_config(page_title="Gestion des Etudiants", page_icon="🎓", layout=
 
 
 def generer_numero():
-    count = compter()
-    return f"ETU-{str(count + 1).zfill(4)}"
+    etudiants = lister()
+    if not etudiants:
+        return "ETU-0001"
+    max_num = 0
+    for e in etudiants:
+        num = e.get("numero", "")
+        if num.startswith("ETU-"):
+            try:
+                n = int(num.split("-")[1])
+                if n > max_num:
+                    max_num = n
+            except ValueError:
+                pass
+    return f"ETU-{str(max_num + 1).zfill(4)}"
 
 
 st.markdown(
