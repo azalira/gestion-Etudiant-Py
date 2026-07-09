@@ -110,7 +110,6 @@ page = st.radio(
     horizontal=True,
     label_visibility="collapsed",
     index=["Liste", "Ajouter", "Modifier"].index(st.session_state.page),
-    key="nav_radio",
 )
 if page != st.session_state.page:
     st.session_state.page = page
