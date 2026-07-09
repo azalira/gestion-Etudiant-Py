@@ -138,9 +138,18 @@ if page == "Liste":
             }
         )
         df.index = range(1, len(df) + 1)
-        st.dataframe(df, use_container_width=True, hide_index=False)
+
+        event = st.dataframe(df, use_container_width=True, hide_index=False, on_select="rerun")
+
+        if event and event.selection and event.selection.rows:
+            selected_idx = event.selection.rows[0]
+            selected_etudiant = etudiants[selected_idx]
+            st.session_state.editing_id = selected_etudiant["_id"]
+            st.session_state.page = "Modifier"
+            st.rerun()
+
         st.markdown("---")
-        col1, col2, col3 = st.columns([4, 1, 1])
+        col1, col2 = st.columns([1, 1])
         with col1:
             selected_numero = st.selectbox(
                 "Sélectionner un étudiant", [e.get("numero", "") for e in etudiants]
@@ -154,7 +163,8 @@ if page == "Liste":
                     st.session_state.editing_id = etudiant_choisi["_id"]
                     st.session_state.page = "Modifier"
                     st.rerun()
-        with col3:
+        col_del1, col_del2 = st.columns([1, 1])
+        with col_del2:
             if st.button("🗑️ Supprimer", type="primary", use_container_width=True):
                 etudiant_choisi = next(
                     (e for e in etudiants if e.get("numero") == selected_numero), None
