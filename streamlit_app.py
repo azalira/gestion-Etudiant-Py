@@ -141,16 +141,32 @@ if page == "Liste":
         event = st.dataframe(df, use_container_width=True, hide_index=False, on_select="rerun")
 
         if event and event.selection and event.selection.rows:
-            selected_idx = event.selection.rows[0]
-            st.session_state.selected_numero = etudiants[selected_idx].get("numero", "")
+            selected_indices = event.selection.rows
+            st.session_state.selected_etudiants = [etudiants[i] for i in selected_indices if i < len(etudiants)]
+        elif "selected_etudiants" not in st.session_state:
+            st.session_state.selected_etudiants = []
+
+        if st.session_state.selected_etudiants:
+            st.markdown("### Étudiants sélectionnés")
+            for etu in st.session_state.selected_etudiants:
+                st.markdown(
+                    f'<div style="background:#f0f2f5;border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px;margin-bottom:6px;">'
+                    f'<strong>{etu.get("nom_prenom", "")}</strong> — '
+                    f'N° {etu.get("numero", "")} | Âge: {etu.get("age", "")} | '
+                    f'Classe: {etu.get("classe", "")} | Moyenne: {etu.get("moyenne", "")}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
         st.markdown("---")
         col1, col2 = st.columns([1, 1])
         with col1:
             numeros = [e.get("numero", "") for e in etudiants]
             default_idx = 0
-            if "selected_numero" in st.session_state and st.session_state.selected_numero in numeros:
-                default_idx = numeros.index(st.session_state.selected_numero)
+            if "selected_etudiants" in st.session_state and st.session_state.selected_etudiants:
+                first_numero = st.session_state.selected_etudiants[0].get("numero", "")
+                if first_numero in numeros:
+                    default_idx = numeros.index(first_numero)
             selected_numero = st.selectbox(
                 "Sélectionner un étudiant", numeros, index=default_idx
             )
