@@ -152,7 +152,7 @@ if page == "Liste":
                 col_info, col_mod, col_sup = st.columns([5, 1, 1])
                 with col_info:
                     st.markdown(
-                        f'<div style="background:#f0f2f5;border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px;margin-bottom:6px;">'
+                        f'<div style="background:#1a1d23;border:1px solid #333;border-radius:8px;padding:10px 16px;margin-bottom:6px;color:#ffffff;">'
                         f'<strong>{etu.get("nom_prenom", "")}</strong> — '
                         f'N° {etu.get("numero", "")} | Âge: {etu.get("age", "")} | '
                         f'Classe: {etu.get("classe", "")} | Moyenne: {etu.get("moyenne", "")}'
