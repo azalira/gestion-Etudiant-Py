@@ -74,6 +74,20 @@ st.markdown(
     [data-testid="stSidebar"] div[data-testid="stMetric"] div[data-testid="stMetricValue"] { color: #ffffff !important; }
     .form-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function setCursorToEnd() {
+        document.querySelectorAll('input[type="text"], input:not([type])').forEach(function(input) {
+            if (input.value && !input.disabled) {
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+        });
+    }
+    setTimeout(setCursorToEnd, 500);
+    new MutationObserver(setCursorToEnd).observe(document.body, { childList: true, subtree: true });
+});
+</script>
 """,
     unsafe_allow_html=True,
 )
@@ -172,17 +186,7 @@ elif page == "Ajouter":
         with col2:
             classe = st.selectbox(
                 "Classe *",
-                [
-                    "",
-                    "1ère Année",
-                    "2ème Année",
-                    "3ème Année",
-                    "L1",
-                    "L2",
-                    "L3",
-                    "M1",
-                    "M2",
-                ],
+                ["", "L1", "L2", "L3", "M1", "M2"],
             )
             moyenne = st.text_input("Moyenne *", value="10.00", placeholder="Ex: 14.50")
         st.markdown(
@@ -247,16 +251,7 @@ elif page == "Modifier":
                     "Âge *", value=str(etudiant.get("age", 18))
                 )
             with col2:
-                classes_list = [
-                    "1ère Année",
-                    "2ème Année",
-                    "3ème Année",
-                    "L1",
-                    "L2",
-                    "L3",
-                    "M1",
-                    "M2",
-                ]
+                classes_list = ["L1", "L2", "L3", "M1", "M2"]
                 current_class = etudiant.get("classe", "")
                 classe = st.selectbox(
                     "Classe *",
