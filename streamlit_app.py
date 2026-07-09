@@ -50,8 +50,10 @@ st.markdown(
     .stRadio > div > div > div[data-checked="true"] > label { background: var(--accent) !important; color: white !important; }
     .stDataFrame { border-radius: 12px !important; overflow: hidden !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07) !important; border: 1px solid var(--border) !important; }
     [data-testid="stDataFrame"] th { background: #f8fafc !important; font-weight: 600 !important; text-transform: uppercase !important; font-size: 0.72rem !important; letter-spacing: 0.06em !important; color: var(--text-muted) !important; padding: 12px 16px !important; border-bottom: 1.5px solid var(--border) !important; }
-    [data-testid="stDataFrame"] td { padding: 12px 16px !important; border-bottom: 1px solid #f1f5f9 !important; font-size: 0.9rem !important; }
+    [data-testid="stDataFrame"] td { padding: 12px 16px !important; border-bottom: 1px solid #f1f5f9 !important; font-size: 0.9rem !important; color: var(--text) !important; }
     [data-testid="stDataFrame"] tr:hover td { background: #f8fafc !important; }
+    [data-testid="stDataFrame"] [data-testid="stDataFrameCell"] { color: var(--text) !important; }
+    [data-testid="stDataFrame"] div { color: var(--text) !important; }
     .stTextInput label, .stNumberInput label, .stSelectbox label { font-weight: 500 !important; color: var(--text) !important; font-size: 0.82rem !important; margin-bottom: 2px !important; font-family: 'Inter', sans-serif !important; white-space: nowrap !important; }
     .stTextInput > div > div > input, .stNumberInput > div > div > input { color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; }
     .stTextInput > div > div > input::placeholder { -webkit-text-fill-color: var(--text-muted) !important; }
